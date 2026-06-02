@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ایستگاه تمرکز و مدیریت زمان پیشرفته</title>
+
+    <!-- ========================================== -->
+    <!-- کدهای جدید PWA (قدم چهارم - بخش اول) -->
+    <!-- ========================================== -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0b14">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- ========================================== -->
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #2c3e50;
+            --primary-color: #6c5ce7;
+            --primary-hover: #5b4bc4;
+            --border-color: rgba(255, 255, 255, 0.5);
+            --input-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(-45deg, #1a2a6c, #b21f1f, #fdbb2d);
+            --glass-bg: rgba(20, 20, 30, 0.85);
+            --text-color: #f1f2f6;
+            --primary-color: #00cec9;
+            --primary-hover: #01a3a0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(30, 30, 40, 0.9);
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --success-color: #27ae60;
+        }
+
+        * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; }
+
+        body {
+            background: var(--bg-gradient); background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite; color: var(--text-color);
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; min-height: 100vh; margin: 0; padding: 60px 0 100px 0;
+            transition: background 0.5s ease, padding 0.5s ease; overflow-x: hidden;
+        }
+
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .container {
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 40px; border-radius: 20px; border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); width: 90%; max-width: 650px; text-align: center;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); margin-bottom: 20px; transition: all 0.5s ease;
+        }
+
+        #tracker-section, #reports-section { max-width: 900px; width: 95%; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { margin-top: 0; font-weight: bold; margin-bottom: 25px; font-size: 24px; }
+        h3 { color: var(--primary-color); margin-top: 25px; margin-bottom: 15px; }
+
+        input, select, textarea { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid transparent; border-radius: 12px; background-color: var(--input-bg); color: var(--text-color); font-size: 15px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-color); }
+
+        button { background-color: var(--primary-color); color: white; border: none; padding: 14px 24px; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s ease; margin-top: 15px; width: 100%; }
+        button:hover { background-color: var(--primary-hover); transform: translateY(-3px); }
+
+        .btn-delete { background-color: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; width: auto; margin: 0; }
+        .btn-delete:hover { background-color: var(--danger-color); color: white; }
+
+        #theme-toggle { position: fixed; top: 20px; left: 20px; width: auto; padding: 10px 18px; border-radius: 30px; font-size: 14px; background: var(--glass-bg); color: var(--text-color); border: 1px solid var(--border-color); z-index: 1000; }
+
+        .page-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); transition: all 0.3s ease; }
+        .page-nav button { margin: 0; width: auto; padding: 8px 16px; font-size: 13px; background-color: transparent; color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; }
+        .page-nav button:hover { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .page-nav .nav-title { font-weight: bold; color: var(--primary-color); font-size: 15px; }
+
+        .templates-box { background: rgba(108, 92, 231, 0.1); border: 1px dashed var(--primary-color); padding: 15px; border-radius: 15px; margin-bottom: 20px; }
+        .templates-box h4 { margin: 0 0 10px 0; font-size: 14px; color: var(--primary-color); }
+        .template-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .template-btns button { margin: 0; padding: 10px 15px; font-size: 13px; width: auto; background-color: var(--container-bg); color: var(--primary-color); border: 1px solid var(--primary-color); }
+        .template-btns button:hover { background-color: var(--primary-color); color: white; }
+
+        .row-setup { background: rgba(0, 0, 0, 0.03); border: 1px solid var(--border-color); padding: 20px; margin-bottom: 15px; border-radius: 15px; text-align: right; position: relative; }
+        [data-theme="dark"] .row-setup { background: rgba(255, 255, 255, 0.03); }
+        .input-group { display: flex; gap: 15px; }
+        .input-group > div { flex: 1; }
+
+        .tracker-row { background: rgba(0, 0, 0, 0.03); border: 2px solid var(--border-color); padding: 20px; margin-bottom: 20px; border-radius: 15px; text-align: right; transition: all 0.4s ease; position: relative; overflow: hidden; }
+        .tracker-row.completed { border-color: var(--success-color); box-shadow: 0 0 25px rgba(46, 204, 113, 0.25); }
+        .row-header { display: flex; flex-direction: column; margin-bottom: 15px; position: relative; z-index: 5; }
+        .row-header-top { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .row-desc-text { font-size: 13px; opacity: 0.8; margin-top: 5px; color: var(--primary-color); }
+        
+        .checkpoints-container { display: flex; flex-wrap: wrap; gap: 15px; position: relative; z-index: 5; justify-content: center; align-items: center; padding: 15px 0; }
+        .checkpoint { background: var(--input-bg); border: 2px solid var(--border-color); border-radius: 12px; width: 140px; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; cursor: pointer; user-select: none; position: relative; overflow: hidden; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s, box-shadow 0.3s; }
+        .checkpoint:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .checkpoint-fill { position: absolute; top: 0; right: 0; bottom: 0; width: 0%; background: rgba(108, 92, 231, 0.18); transition: width 1s linear; z-index: 1; }
+        .checkpoint .time-display { font-size: 16px; font-weight: bold; direction: ltr; position: relative; z-index: 2; }
+        .checkpoint .cp-icon { position: relative; z-index: 2; font-size: 14px; }
+        
+        .checkpoint.running { border-color: var(--primary-color); transform: scale(1.03); box-shadow: 0 0 15px rgba(108, 92, 231, 0.3); }
+        .checkpoint.running .checkpoint-fill { background: rgba(108, 92, 231, 0.3); }
+        .checkpoint.paused { border-color: var(--warning-color); }
+        .checkpoint.finished { border-color: var(--success-color); }
+        .checkpoint.finished .checkpoint-fill { width: 100% !important; background: var(--success-color) !important; transition: width 0.3s ease; }
+        .checkpoint.finished .time-display, .checkpoint.finished .cp-icon { color: white; }
+
+        .test-zone-container { display: none; margin-top:15px; padding:12px; background:rgba(46, 204, 113, 0.15); border:1px dashed var(--success-color); border-radius:10px; align-items:center; justify-content:space-between; animation: slideUp 0.4s ease; position:relative; z-index:10; }
+        .test-zone-container.visible { display: flex; }
+        .test-zone-container span { font-size:13px; font-weight:bold; }
+        .test-zone-container input { width:90px; padding:8px; margin:0; text-align:center; border-radius:8px; }
+
+        .chart-card { background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); padding: 20px; border-radius: 15px; margin-bottom: 25px; overflow-x: auto; }
+        [data-theme="dark"] .chart-card { background: rgba(255,255,255,0.02); }
+        .heatmap-wrapper { display: flex; flex-direction: row-reverse; gap: 4px; padding: 10px; min-width: max-content; }
+        .heatmap-col { display: flex; flex-direction: column; gap: 4px; }
+        .heatmap-cell { width: 12px; height: 12px; border-radius: 3px; background-color: rgba(0,0,0,0.05); transition: all 0.2s; }
+        [data-theme="dark"] .heatmap-cell { background-color: rgba(255,255,255,0.05); }
+        .heatmap-cell:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+        .heatmap-cell[data-level="1"] { background-color: #c6e48b; }
+        .heatmap-cell[data-level="2"] { background-color: #7bc96f; }
+        .heatmap-cell[data-level="3"] { background-color: #239a3b; }
+        .heatmap-cell[data-level="4"] { background-color: #196127; }
+
+        .stats-grid { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stat-card { flex: 1; min-width: 140px; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; text-align: center; }
+        [data-theme="dark"] .stat-card { background: rgba(255,255,255,0.03); }
+        .stat-card h4 { margin: 0 0 10px 0; font-size: 14px; opacity: 0.8; }
+        .stat-card p { margin: 0; font-size: 22px; font-weight: bold; color: var(--primary-color); }
+        
+        .subject-breakdown-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
+        .subject-card { flex: 1 1 calc(33% - 12px); min-width: 130px; background: rgba(108, 92, 231, 0.08); border: 1px solid rgba(108, 92, 231, 0.3); padding: 12px; border-radius: 12px; text-align: right; }
+        .subject-card h5 { margin: 0 0 8px 0; color: var(--primary-color); font-size: 14px; }
+        .subject-card p { margin: 3px 0; font-size: 12px; opacity: 0.9; font-weight: bold; }
+
+        .history-list { text-align: right; max-height: 400px; overflow-y: auto; padding-left: 10px; }
+        .history-item { background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; margin-bottom: 12px; position: relative; }
+        [data-theme="dark"] .history-item { background: rgba(255,255,255,0.02); }
+        .progress-bar-bg { background: rgba(0,0,0,0.1); height: 10px; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+        [data-theme="dark"] .progress-bar-bg { background: rgba(255,255,255,0.1); }
+        .progress-bar-fill { background: var(--success-color); height: 100%; width: 0%; transition: width 0.5s ease; }
+
+        .fab { position: fixed; bottom: 85px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary-color); color: white; font-size: 24px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; z-index: 1001; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .fab:hover { transform: scale(1.1); background: var(--primary-hover); }
+        
+        .scratchpad-modal { position: fixed; bottom: 160px; right: 25px; width: 300px; background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--border-color); border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 1002; opacity: 0; pointer-events: none; transform: translateY(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .scratchpad-modal.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+        .scratchpad-modal h4 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .scratchpad-modal textarea { width: 100%; height: 200px; resize: none; margin: 0; padding: 10px; font-size: 13px; line-height: 1.6; border-radius: 8px; }
+
+        .audio-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--glass-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color); padding: 10px 20px; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); flex-wrap: wrap; }
+        .audio-bar button { width: auto; margin: 0; padding: 8px 15px; font-size: 13px; background: transparent; border: 1px solid var(--primary-color); color: var(--text-color); border-radius: 30px; }
+        .audio-bar button:hover { background: var(--primary-color); color: white; }
+        .audio-bar .active-btn { background: var(--primary-color) !important; color: white !important; }
+        .audio-player-ui { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 5px 15px; border-radius: 30px; }
+        [data-theme="dark"] .audio-player-ui { background: rgba(255,255,255,0.05); }
+
+        body.focus-mode { background: #0b0b14 !important; color: #ffffff !important; justify-content: center; padding: 40px 0; }
+        body.focus-mode .container { background: rgba(20, 20, 35, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-width: 850px; width: 95%; }
+        body.focus-mode .page-nav button:first-child, body.focus-mode .page-nav .nav-title, body.focus-mode #theme-toggle, body.focus-mode .audio-bar, body.focus-mode h2, body.focus-mode .row-header-top span:first-child, body.focus-mode .row-desc-text { display: none !important; }
+        body.focus-mode .tracker-row { display: none !important; }
+        body.focus-mode .tracker-row.active-focus-row { display: block !important; background: rgba(255, 255, 255, 0.02); border-color: rgba(255, 255, 255, 0.1); width: 100%; padding: 30px; }
+        body.focus-mode .checkpoint.running { transform: scale(1.35) !important; width: 175px; height: 65px; border-color: var(--primary-color) !important; box-shadow: 0 0 30px var(--primary-color) !important; z-index: 50; margin: 0 20px; }
+        body.focus-mode .checkpoint.running .time-display { font-size: 22px; }
+        body.focus-mode .checkpoint.running .cp-icon { font-size: 18px; }
+        
+        #setup-section, #tracker-section, #reports-section { display: none; }
+    </style>
+</head>
+<body>
+
+    <button id="theme-toggle" onclick="toggleTheme()">🌗 تغییر پوسته</button>
+
+    <div class="audio-bar">
+        <span style="font-size: 12px; font-weight: bold; opacity: 0.8;">🎧 تمرکز صوتی:</span>
+        <button id="btn-noise" onclick="toggleWhiteNoise()">🌧️ صدای باران ممتد</button>
+        <div class="audio-player-ui">
+            <input type="file" id="audio-upload" multiple accept="audio/*" style="display:none;" onchange="loadPlaylist(event)">
+            <button onclick="document.getElementById('audio-upload').click()" style="border:none; padding:5px;">🎵 انتخاب موسیقی لوکال</button>
+            <audio id="music-player" controls style="height:30px; width: 200px; outline:none;"></audio>
+        </div>
+    </div>
+
+    <button class="fab" onclick="toggleScratchpad()">📝</button>
+    <div class="scratchpad-modal" id="scratchpad">
+        <h4>💭 جعبه افکار سرگردان <span style="cursor:pointer;" onclick="toggleScratchpad()">✖</span></h4>
+        <textarea id="scratchpad-text" placeholder="تایپ کنید... (خودکار ذخیره می‌شود)"></textarea>
+    </div>
+
+    <div class="container" id="login-section">
+        <h2>🔒 ایستگاه تمرکز مطالعاتی</h2>
+        <input type="password" id="password-input" placeholder="رمز عبور (HELLO)..." style="text-align: center; letter-spacing: 2px;">
+        <button onclick="checkPassword()">ورود به ایستگاه 🚀</button>
+        <button onclick="showReportsDirectly()" style="background-color: transparent; color: var(--text-color); border: 2px dashed var(--border-color); font-size: 14px;">📊 مشاهده مستقیم آرشیو</button>
+        <p id="login-error" style="color: #ff4757; display: none; margin-top: 15px;">❌ رمز عبور اشتباه است!</p>
+    </div>
+
+    <div class="container" id="setup-section">
+        <div class="page-nav">
+            <button onclick="goBack()">◀ خروج</button>
+            <span class="nav-title">تنظیمات و الگوها</span>
+            <button onclick="generateTracker()">تایید و شروع ▶</button>
+        </div>
+        <div class="templates-box">
+            <h4>⚡ بارگذاری سریع الگوها:</h4>
+            <div class="template-btns">
+                <button onclick="loadTemplate('mba')">🎓 بسته آمادگی MBA</button>
+                <button onclick="loadTemplate('uni')">🌱 بسته دروس دانشگاهی</button>
+                <button onclick="loadTemplate('light')">☕ بسته مرور سبک</button>
+            </div>
+        </div>
+        <div id="rows-container"></div>
+        <button onclick="addNewRowSetting()" style="background-color: transparent; color: var(--text-color); border: 2px dashed var(--border-color);">➕ افزودن ردیف دستی</button>
+    </div>
+
+    <div class="container" id="tracker-section">
+        <div class="page-nav">
+            <button onclick="goBack()">◀ ویرایش برنامه</button>
+            <span class="nav-title">داشبورد اجرایی</span>
+            <button id="focus-btn" onclick="toggleFocusMode()" style="background:var(--success-color); border-color:var(--success-color); color:white; z-index:1005;">🎯 حالت تمرکز عمیق</button>
+        </div>
+        <p id="tracker-date-display" style="font-size: 14px; opacity: 0.8; margin-bottom: 20px;"></p>
+        <div id="tracker-content"></div>
+        <button id="save-btn" onclick="saveAndFinish()" style="background-color: var(--danger-color); margin-top: 30px;">🏁 پایان کامل روز و ذخیره دائم</button>
+    </div>
+
+    <div class="container" id="reports-section">
+        <div class="page-nav">
+            <button onclick="goBack()">◀ صفحه قبل</button>
+            <span class="nav-title">آمار و عملکرد</span>
+            <button style="visibility:hidden">بعدی ▶</button>
+        </div>
+        <div class="chart-card">
+            <h4 style="margin:0 0 10px 0; font-size:14px; opacity:0.9; text-align:right;">🟩 نقشه حرارتی تعهد (۳۶۵ روز گذشته)</h4>
+            <div class="heatmap-wrapper" id="heatmap-container"></div>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card"><h4>کل مطالعه</h4><p id="stat-total-time">۰ دقیقه</p></div>
+            <div class="stat-card"><h4>تست‌ها</h4><p id="stat-total-tests" style="color:var(--success-color);">۰ تست</p></div>
+            <div class="stat-card"><h4>چک‌پوینت</h4><p id="stat-total-cps">۰</p></div>
+            <div class="stat-card"><h4>روزهای فعال</h4><p id="stat-total-days">۰ روز</p></div>
+        </div>
+        <button id="toggle-breakdown-btn" onclick="toggleSubjectBreakdown()" style="background-color: transparent; color: var(--primary-color); border: 2px dashed var(--primary-color); margin-top: 0; margin-bottom: 25px;">📊 مشاهده تفکیک دروس</button>
+        <div id="subject-breakdown-container" style="display: none; animation: slideUp 0.4s ease; width: 100%; margin-bottom: 25px;"></div>
+        <h3>📜 تاریخچه تفصیلی</h3>
+        <div class="history-list" id="history-container"></div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="backToSetup()" style="background-color: var(--primary-color);">📅 روز جدید</button>
+            <button onclick="exportToCSV()" style="background-color: #27ae60;">📥 خروجی اکسل</button>
+        </div>
+    </div>
+
+    <script>
+        let rowCount = 0; let studyData = []; let timers = {}; let loginTimeStr = "";
+        let pageHistory = ['login']; let currentPage = 'login';
+        let isFocusMode = false;
+
+        function sanitizeText(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
+        function escapeCSV(str) { return `"${str.replace(/"/g, '""')}"`; }
+
+        let globalAudioCtx = null;
+        function initGlobalAudio() {
+            if (!globalAudioCtx) { globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            if (globalAudioCtx.state === 'suspended') { globalAudioCtx.resume(); }
+        }
+
+        const scratchpadText = document.getElementById('scratchpad-text');
+        scratchpadText.value = localStorage.getItem('study_scratchpad') || '';
+        scratchpadText.addEventListener('input', (e) => localStorage.setItem('study_scratchpad', e.target.value));
+        function toggleScratchpad() { document.getElementById('scratchpad').classList.toggle('active'); }
+
+        let rainCtx, rainNode;
+        function toggleWhiteNoise() {
+            initGlobalAudio();
+            const btn = document.getElementById('btn-noise');
+            if(rainNode) { rainNode.disconnect(); rainNode.stop(); rainNode = null; btn.classList.remove('active-btn'); btn.innerText = '🌧️ صدای باران ممتد'; return; }
+            try {
+                let bSize = 2 * globalAudioCtx.sampleRate; let buffer = globalAudioCtx.createBuffer(1, bSize, globalAudioCtx.sampleRate); let output = buffer.getChannelData(0);
+                for (let i = 0; i < bSize; i++) output[i] = Math.random() * 2 - 1;
+                rainNode = globalAudioCtx.createBufferSource(); rainNode.buffer = buffer; rainNode.loop = true;
+                let filter = globalAudioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
+                rainNode.connect(filter); filter.connect(globalAudioCtx.destination); rainNode.start();
+                btn.classList.add('active-btn'); btn.innerText = '⏹️ قطع صدای باران';
+            } catch (e) { console.log(e); }
+        }
+
+        let playlist = [], currentTrackIdx = 0; const audioPlayer = document.getElementById('music-player');
+        function loadPlaylist(e) { const files = e.target.files; if(files.length === 0) return; playlist = Array.from(files).map(file => URL.createObjectURL(file)); currentTrackIdx = 0; playTrack(); }
+        function playTrack() { if(playlist.length === 0) return; audioPlayer.src = playlist[currentTrackIdx]; audioPlayer.play(); }
+        audioPlayer.addEventListener('ended', () => { currentTrackIdx++; if(currentTrackIdx < playlist.length) playTrack(); else currentTrackIdx = 0; });
+
+        function toggleTheme() {
+            const body = document.body;
+            if (body.getAttribute("data-theme") === "dark") { body.removeAttribute("data-theme"); localStorage.setItem("theme", "light"); } 
+            else { body.setAttribute("data-theme", "dark"); localStorage.setItem("theme", "dark"); }
+            updateAllRowProgressVisuals();
+        }
+        window.onload = function() { if(localStorage.getItem("theme") === "dark") document.body.setAttribute("data-theme", "dark"); }
+
+        function navigate(targetPage, isBack = false) {
+            if (!isBack && targetPage !== currentPage) { pageHistory.push(targetPage); }
+            ['login', 'setup', 'tracker', 'reports'].forEach(id => { document.getElementById(id + '-section').style.display = 'none'; });
+            document.getElementById(targetPage + '-section').style.display = 'block';
+            currentPage = targetPage; if (targetPage === 'reports') { refreshReportsData(); }
+        }
+
+        function goBack() { if (pageHistory.length > 1) { pageHistory.pop(); const prevPage = pageHistory[pageHistory.length - 1]; navigate(prevPage, true); } }
+        function checkPassword() { if (document.getElementById('password-input').value === 'HELLO') { loginTimeStr = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }); navigate('setup'); } else { document.getElementById('login-error').style.display = 'block'; } }
+        document.getElementById('password-input').addEventListener('keypress', e => { if(e.key === 'Enter') checkPassword(); });
+        function showReportsDirectly() { if (document.getElementById('password-input').value === 'HELLO') { navigate('reports'); } else { alert("رمز عبور اشتباه است."); } }
+
+        function toggleFocusMode() {
+            const btn = document.getElementById('focus-btn'); const body = document.body;
+            if(!isFocusMode) {
+                if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(e=>{}); }
+                body.classList.add('focus-mode');
+                btn.innerText = '❌ خروج از تمرکز'; btn.style.background = 'transparent'; btn.style.color = 'var(--text-color)';
+                isFocusMode = true; syncActiveFocusRowVisuals();
+            } else { exitFocusModeClean(); }
+        }
+
+        function exitFocusModeClean() {
+            if (document.fullscreenElement && document.exitFullscreen) { document.exitFullscreen().catch(e=>{}); }
+            document.body.classList.remove('focus-mode');
+            const btn = document.getElementById('focus-btn');
+            if(btn) { btn.innerText = '🎯 حالت تمرکز عمیق'; btn.style.background = 'var(--success-color)'; btn.style.color = 'white'; }
+            isFocusMode = false;
+            document.querySelectorAll('.tracker-row').forEach(row => row.classList.remove('active-focus-row'));
+            updateAllRowProgressVisuals();
+        }
+        document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && isFocusMode) exitFocusModeClean(); });
+
+        function syncActiveFocusRowVisuals(overrideRowId = null) {
+            let activeRowId = overrideRowId;
+            if (!activeRowId) {
+                for (let key in timers) { if (timers[key].state === 'running') { activeRowId = key.split('-')[0].replace('r', ''); break; } }
+            }
+            if (!activeRowId && studyData.length > 0) activeRowId = studyData[0].id;
+            document.querySelectorAll('.tracker-row').forEach(row => {
+                if (row.id === `tracker-row-${activeRowId}`) { row.classList.add('active-focus-row'); } 
+                else { row.classList.remove('active-focus-row'); }
+            });
+        }
+
+        function loadTemplate(type) {
+            document.getElementById('rows-container').innerHTML = ''; rowCount = 0;
+            if (type === 'mba') { createSpecificRow('ریاضیات', 'تست و مرور فرمول‌ها', 4, 45, 10); createSpecificRow('آمار و ترکیبیات', 'حل تست‌های طبقه‌بندی شده', 3, 50, 10); createSpecificRow('استعداد تحلیلی', 'سوالات هوش و منطق', 3, 40, 10); } 
+            else if (type === 'uni') { createSpecificRow('طرح آزمایش‌ها', 'مرور واریانس و آزمون توکی', 3, 60, 15); createSpecificRow('اصلاح نباتات', 'مباحث ژنتیک و هیبریداسیون', 3, 45, 10); createSpecificRow('زبان', 'لغات تخصصی و درک مطلب', 2, 30, 5); } 
+            else if (type === 'light') { createSpecificRow('مرور سریع', 'خلاصه‌نویسی‌های روز گذشته', 2, 30, 5); createSpecificRow('کارهای شخصی/توسعه', 'آزادی عمل', 2, 45, 10); }
+        }
+
+        function createSpecificRow(name, desc, cps, time, breakTime) {
+            rowCount++; const container = document.getElementById('rows-container'); const rowDiv = document.createElement('div');
+            rowDiv.className = 'row-setup'; rowDiv.id = `row-setup-${rowCount}`;
+            rowDiv.innerHTML = `
+                <div class="row-setup-header"><strong style="color: var(--primary-color);">📌 ردیف مطالعاتی</strong><button class="btn-delete" onclick="removeRow('row-setup-${rowCount}')">🗑️ حذف</button></div>
+                <div class="input-group">
+                    <div><label style="font-size:12px;">عنوان درس:</label><select class="row-name-input"><option value="ریاضیات" ${name==='ریاضیات'?'selected':''}>ریاضیات</option><option value="آمار و ترکیبیات" ${name==='آمار و ترکیبیات'?'selected':''}>آمار و ترکیبیات</option><option value="استعداد تحلیلی" ${name==='استعداد تحلیلی'?'selected':''}>استعداد تحلیلی</option><option value="طرح آزمایش‌ها" ${name==='طرح آزمایش‌ها'?'selected':''}>طرح آزمایش‌ها</option><option value="اصلاح نباتات" ${name==='اصلاح نباتات'?'selected':''}>اصلاح نباتات</option><option value="زبان" ${name==='زبان'?'selected':''}>زبان</option><option value="مرور سریع" ${name==='مرور سریع'?'selected':''}>مرور سریع</option><option value="کارهای شخصی/توسعه" ${name==='کارهای شخصی/توسعه'?'selected':''}>کارهای شخصی/توسعه</option></select></div>
+                    <div><label style="font-size:12px;">توضیحات:</label><input type="text" class="row-desc-input" value="${desc}"></div>
+                </div>
+                <div class="input-group">
+                    <div><label style="font-size:12px;">تعداد چک‌پوینت:</label><input type="number" class="row-cps-input" min="1" value="${cps}"></div>
+                    <div><label style="font-size:12px;">زمان (دقیقه):</label><input type="number" class="row-time-input" min="1" value="${time}"></div>
+                    <div><label style="font-size:12px;">استراحت (دقیقه):</label><input type="number" class="row-break-input" min="0" value="${breakTime}"></div>
+                </div>`;
+            container.appendChild(rowDiv);
+        }
+
+        function addNewRowSetting() { createSpecificRow('ریاضیات', '', 4, 45, 10); }
+        function removeRow(rowId) { document.getElementById(rowId)?.remove(); }
+
+        function generateTracker() {
+            studyData = [];
+            document.querySelectorAll('.row-setup').forEach((row, index) => {
+                const name = sanitizeText(row.querySelector('.row-name-input').value); 
+                const desc = sanitizeText(row.querySelector('.row-desc-input').value || 'بدون توضیحات');
+                const cps = parseInt(row.querySelector('.row-cps-input').value); const time = parseInt(row.querySelector('.row-time-input').value); const breakTime = parseInt(row.querySelector('.row-break-input').value);
+                if (cps > 0 && time > 0) studyData.push({ id: index + 1, name, desc, cps, time, breakTime });
+            });
+            if(studyData.length === 0) return alert("لطفاً حداقل یک ردیف وارد کنید.");
+            if(!loginTimeStr) loginTimeStr = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            buildTrackerUI(); navigate('tracker');
+            document.getElementById('tracker-date-display').innerText = `امروز: ${new Date().toLocaleDateString('fa-IR')} | ورود: ${loginTimeStr}`;
+        }
+
+        function buildTrackerUI() {
+            for (let key in timers) { if (timers[key].interval) clearInterval(timers[key].interval); }
+            const container = document.getElementById('tracker-content'); container.innerHTML = ''; timers = {};
+            studyData.forEach(row => {
+                const rowDiv = document.createElement('div'); rowDiv.className = 'tracker-row'; rowDiv.id = `tracker-row-${row.id}`;
+                let cpsHTML = '';
+                for (let j = 1; j <= row.cps; j++) {
+                    const timerId = `r${row.id}-c${j}`;
+                    timers[timerId] = { duration: row.time * 60, remaining: row.time * 60, state: 'idle', interval: null };
+                    cpsHTML += `<div class="checkpoint" id="cp-${timerId}" onclick="handleCheckpointClick('${timerId}', ${row.id})"><div class="checkpoint-fill" id="fill-${timerId}"></div><div class="time-display" id="time-${timerId}">${formatTime(timers[timerId].remaining)}</div><div class="cp-icon" id="icon-${timerId}">▶️</div></div>`;
+                }
+                
+                rowDiv.innerHTML = `<div class="row-header"><div class="row-header-top"><span>📚 ${row.name} (مطالعه: ${row.time}دقیقه | استراحت: ${row.breakTime}دقیقه)</span><span style="font-size:13px; opacity:0.8;" id="row-status-${row.id}">وضعیت: در حال انجام</span></div><span class="row-desc-text">📝 توضیحات: ${row.desc}</span></div><div class="checkpoints-container">${cpsHTML}</div>
+                <div class="test-zone-container" id="test-zone-${row.id}">
+                    <span>🎯 تعداد تست‌های تمرین شده در این بازه را وارد کنید:</span>
+                    <input type="number" id="test-input-${row.id}" min="0" value="0">
+                </div>`;
+                container.appendChild(rowDiv);
+            });
+            updateAllRowProgressVisuals();
+        }
+
+        function formatTime(seconds) { return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`; }
+
+        function playSmartBeep(type = 'cp') {
+            try {
+                if(!globalAudioCtx) return;
+                if(type === 'cp') {
+                    const osc = globalAudioCtx.createOscillator(); const gain = globalAudioCtx.createGain(); osc.connect(gain); gain.connect(globalAudioCtx.destination);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, globalAudioCtx.currentTime); gain.gain.setValueAtTime(0.3, globalAudioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.1);
+                    osc.start(globalAudioCtx.currentTime); osc.stop(globalAudioCtx.currentTime + 0.1);
+                } else if(type === 'row') {
+                    [440, 554, 659].forEach((freq, idx) => {
+                        const osc = globalAudioCtx.createOscillator(); const gain = globalAudioCtx.createGain(); osc.connect(gain); gain.connect(globalAudioCtx.destination);
+                        osc.type = 'triangle'; osc.frequency.value = freq; gain.gain.setValueAtTime(0, globalAudioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.2, globalAudioCtx.currentTime + 0.1); gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 1.5);
+                        osc.start(globalAudioCtx.currentTime + (idx * 0.1)); osc.stop(globalAudioCtx.currentTime + 1.5 + (idx*0.1));
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function triggerFirecracker(rowElement) {
+            for (let i = 0; i < 60; i++) {
+                const p = document.createElement('div'); const colors = ['#00cec9', '#ff7675', '#eccc68', '#1e90ff', '#ff007f', '#2ecc71', '#6c5ce7', '#ffffff'];
+                p.style.background = colors[Math.floor(Math.random() * colors.length)]; p.style.position = 'absolute'; p.style.left = '50%'; p.style.top = '50%'; p.style.width = Math.random() * 8 + 6 + 'px'; p.style.height = Math.random() * 8 + 6 + 'px'; p.style.borderRadius = '50%'; p.style.zIndex = '100';
+                const angle = Math.random() * Math.PI * 2; const velocity = Math.random() * 250 + 100; const x = Math.cos(angle) * velocity; const y = Math.sin(angle) * velocity;
+                rowElement.appendChild(p);
+                p.animate([ { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(0)`, opacity: 0 } ], { duration: Math.random() * 1000 + 800, easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)', fill: 'forwards' });
+                setTimeout(() => p.remove(), 2000);
+            }
+        }
+
+        function updateRowProgressVisuals(rowId) {
+            const rowConfig = studyData.find(r => r.id === rowId); if (!rowConfig) return;
+            let totalSeconds = rowConfig.cps * rowConfig.time * 60; let elapsedSeconds = 0;
+            for (let j = 1; j <= rowConfig.cps; j++) { const t = timers[`r${rowId}-c${j}`]; elapsedSeconds += (t.duration - t.remaining); }
+            let rowPercent = Math.round((elapsedSeconds / totalSeconds) * 100);
+            const rowElement = document.getElementById(`tracker-row-${rowId}`); if (!rowElement) return;
+            if (document.body.getAttribute("data-theme") === "dark") { rowElement.style.background = `linear-gradient(to left, rgba(0, 206, 201, 0.12) ${rowPercent}%, rgba(255, 255, 255, 0.03) ${rowPercent}%)`; } 
+            else { rowElement.style.background = `linear-gradient(to left, rgba(46, 204, 113, 0.14) ${rowPercent}%, rgba(0, 0, 0, 0.03) ${rowPercent}%)`; }
+        }
+        function updateAllRowProgressVisuals() { studyData.forEach(row => updateRowProgressVisuals(row.id)); }
+
+        function handleCheckpointClick(timerId, rowId) {
+            initGlobalAudio(); 
+            const t = timers[timerId]; const cp = document.getElementById(`cp-${timerId}`); const icon = document.getElementById(`icon-${timerId}`); const fill = document.getElementById(`fill-${timerId}`);
+            if (t.state === 'finished') {
+                if (confirm("آیا مایل به حذف تیک این چک‌پوینت هستید؟")) {
+                    t.state = 'idle'; t.remaining = t.duration; cp.className = 'checkpoint'; icon.innerText = '▶️'; fill.style.width = '0%';
+                    document.getElementById(`time-${timerId}`).innerText = formatTime(t.remaining); checkRowCompletion(rowId); updateRowProgressVisuals(rowId);
+                    if(isFocusMode) syncActiveFocusRowVisuals(rowId);
+                } return;
+            }
+            if (t.state === 'idle' || t.state === 'paused') {
+                t.state = 'running'; cp.className = 'checkpoint running'; icon.innerText = '⏸️';
+                if(isFocusMode) syncActiveFocusRowVisuals(rowId);
+                t.interval = setInterval(() => {
+                    t.remaining--; document.getElementById(`time-${timerId}`).innerText = formatTime(t.remaining);
+                    fill.style.width = (((t.duration - t.remaining) / t.duration) * 100) + '%';
+                    updateRowProgressVisuals(rowId);
+                    if (t.remaining <= 0) {
+                        clearInterval(t.interval); t.state = 'finished'; cp.className = 'checkpoint finished'; icon.innerText = '✔️';
+                        document.getElementById(`time-${timerId}`).innerText = "پایان"; checkRowCompletion(rowId, true);
+                    }
+                }, 1000);
+            } else if (t.state === 'running') { clearInterval(t.interval); t.state = 'paused'; cp.className = 'checkpoint paused'; icon.innerText = '▶️'; }
+        }
+
+        function checkRowCompletion(rowId, justFinished = false) {
+            const rowConfig = studyData.find(r => r.id === rowId); let allFinished = true;
+            for (let j = 1; j <= rowConfig.cps; j++) { if (timers[`r${rowId}-c${j}`].state !== 'finished') { allFinished = false; break; } }
+            const el = document.getElementById(`tracker-row-${rowId}`); const st = document.getElementById(`row-status-${rowId}`); const testZone = document.getElementById(`test-zone-${rowId}`);
+            if (allFinished) {
+                if(!el.classList.contains('completed')) { triggerFirecracker(el); if(justFinished) playSmartBeep('row'); } 
+                el.classList.add('completed'); st.innerText = "🏆 تکمیل شد"; st.style.color = "var(--success-color)";
+                testZone.classList.add('visible'); 
+            } else { 
+                if(justFinished) playSmartBeep('cp'); 
+                el.classList.remove('completed'); st.innerText = "وضعیت: در حال انجام"; st.style.color = "inherit"; 
+                testZone.classList.remove('visible'); 
+            }
+            updateRowProgressVisuals(rowId);
+        }
+
+        function saveAndFinish() {
+            if(isFocusMode) exitFocusModeClean();
+            for (let key in timers) { if (timers[key].interval) clearInterval(timers[key].interval); }
+
+            let mins = 0, finished = 0, planned = 0, dayTotalTests = 0, details = [];
+            studyData.forEach(row => {
+                let rFin = 0; for (let j = 1; j <= row.cps; j++) { if (timers[`r${row.id}-c${j}`].state === 'finished') { mins += row.time; rFin++; finished++; } planned++; }
+                const testInput = document.getElementById(`test-input-${row.id}`); let rowTests = testInput ? (parseInt(testInput.value) || 0) : 0; dayTotalTests += rowTests;
+                details.push({ name: row.name, desc: row.desc, completed: rFin, total: row.cps, tests: rowTests, cpTime: row.time });
+            });
+
+            let db = JSON.parse(localStorage.getItem('study_db')) || []; let todayDateStr = new Date().toLocaleDateString('fa-IR');
+            let existingIndex = db.findIndex(item => item.date === todayDateStr);
+
+            if (existingIndex !== -1) {
+                let todayRecord = db[existingIndex]; todayRecord.endTime = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+                todayRecord.minutes += mins; todayRecord.cpsFinished += finished; todayRecord.cpsPlanned += planned; todayRecord.totalTests += dayTotalTests;
+                details.forEach(newSubj => {
+                    let existingSubj = todayRecord.breakdown.find(b => b.name === newSubj.name && b.desc === newSubj.desc);
+                    if (existingSubj) { existingSubj.completed += newSubj.completed; existingSubj.total += newSubj.total; existingSubj.tests += newSubj.tests; } 
+                    else { todayRecord.breakdown.push(newSubj); }
+                });
+                alert("✨ پارت جدید با موفقیت ادغام شد.");
+            } else {
+                db.push({ date: todayDateStr, loginTime: loginTimeStr, endTime: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }), minutes: mins, cpsFinished: finished, cpsPlanned: planned, totalTests: dayTotalTests, breakdown: details });
+                alert("✨ اطلاعات با موفقیت ذخیره شد.");
+            }
+            localStorage.setItem('study_db', JSON.stringify(db)); navigate('reports');
+        }
+
+        function deleteRecord(index) { if (confirm("⚠️ آیا از حذف مطمئن هستید؟")) { let db = JSON.parse(localStorage.getItem('study_db')) || []; db.splice(index, 1); localStorage.setItem('study_db', JSON.stringify(db)); refreshReportsData(); } }
+        function toggleSubjectBreakdown() { const cont = document.getElementById('subject-breakdown-container'); const btn = document.getElementById('toggle-breakdown-btn'); if(cont.style.display === 'none' || cont.style.display === '') { cont.style.display = 'block'; btn.innerHTML = '❌ بستن پنل تفکیک دروس'; } else { cont.style.display = 'none'; btn.innerHTML = '📊 مشاهده تفکیک دروس'; } }
+
+        function refreshReportsData() {
+            let db = JSON.parse(localStorage.getItem('study_db')) || [];
+            const heatmapCont = document.getElementById('heatmap-container'); heatmapCont.innerHTML = '';
+            let heatmapHTML = ''; let today = new Date();
+            for (let w = 0; w < 52; w++) {
+                heatmapHTML += `<div class="heatmap-col">`;
+                for (let d = 0; d < 7; d++) {
+                    let pastDate = new Date(today); pastDate.setDate(today.getDate() - (w * 7 + d)); let dateStr = pastDate.toLocaleDateString('fa-IR');
+                    let record = db.find(x => x.date === dateStr); let mins = record ? record.minutes : 0; let level = 0;
+                    if(mins > 0 && mins <= 60) level = 1; else if(mins > 60 && mins <= 150) level = 2; else if(mins > 150 && mins <= 300) level = 3; else if(mins > 300) level = 4;
+                    heatmapHTML += `<div class="heatmap-cell" data-level="${level}" title="${dateStr} - مطالعه: ${mins} دقیقه"></div>`;
+                }
+                heatmapHTML += `</div>`;
+            }
+            heatmapCont.innerHTML = heatmapHTML;
+
+            let tMins = 0, tCps = 0, tTests = 0; let subjectStats = {};
+            db.forEach(item => { 
+                tMins += item.minutes; tCps += item.cpsFinished; tTests += (item.totalTests || 0); 
+                item.breakdown.forEach(b => {
+                    if (!subjectStats[b.name]) { subjectStats[b.name] = { time: 0, tests: 0 }; }
+                    let rowTime = b.cpTime ? (b.completed * b.cpTime) : 0; subjectStats[b.name].time += rowTime; subjectStats[b.name].tests += (b.tests || 0);
+                });
+            });
+            
+            document.getElementById('stat-total-time').innerText = `${tMins} دقیقه`; document.getElementById('stat-total-cps').innerText = tCps; document.getElementById('stat-total-days').innerText = db.length; document.getElementById('stat-total-tests').innerText = `${tTests} تست`;
+
+            const breakdownCont = document.getElementById('subject-breakdown-container'); breakdownCont.innerHTML = '';
+            if (Object.keys(subjectStats).length > 0) {
+                let gridHTML = '<div class="subject-breakdown-grid">';
+                for (let subj in subjectStats) { gridHTML += `<div class="subject-card"><h5>📘 ${subj}</h5><p>⏱️ ${subjectStats[subj].time} دقیقه</p><p style="color:var(--success-color);">📝 ${subjectStats[subj].tests} تست</p></div>`; }
+                gridHTML += '</div>'; breakdownCont.innerHTML = gridHTML;
+            } else { breakdownCont.innerHTML = '<p style="font-size:12px; opacity:0.6; text-align:center;">داده‌ای برای تفکیک وجود ندارد.</p>'; }
+
+            const cont = document.getElementById('history-container'); cont.innerHTML = ''; if(db.length === 0) return;
+            for (let i = db.length - 1; i >= 0; i--) {
+                let item = db[i]; let perc = item.cpsPlanned > 0 ? Math.round((item.cpsFinished / item.cpsPlanned) * 100) : 0;
+                let bdHTML = item.breakdown.map(b => `<div style="font-size:12px; background:rgba(0,0,0,0.04); padding:6px 10px; border-radius:8px; margin-top:5px; display:flex; justify-content:space-between; align-items:center;"><span><strong>📘 ${b.name}</strong> (${b.desc}) - موفقیت: ${b.completed}/${b.total}</span><span style="color:var(--success-color); font-weight:bold; font-size:11px;">📝 ${b.tests || 0} تست</span></div>`).join('');
+                cont.innerHTML += `<div class="history-item"><div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; margin-bottom:5px;"><span>📅 ${item.date} (شروع: ${item.loginTime} | ثبت: ${item.endTime||'-'})</span><div style="display:flex; gap:12px; align-items:center;"><span style="color:var(--primary-color)">⏱️ ${item.minutes} دقیقه</span><span style="color:var(--success-color)">📝 ${item.totalTests || 0} تست</span><button class="btn-delete" style="padding:2px 6px; font-size:10px;" onclick="deleteRecord(${i})">🗑️ حذف</button></div></div><div>${bdHTML}</div><div style="font-size:12px; opacity:0.8; display:flex; justify-content:space-between; margin-top:10px;"><span>تعهد کل امروز: ${perc}%</span><span>${item.cpsFinished}/${item.cpsPlanned} چک‌پوینت</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${perc}%"></div></div></div>`;
+            }
+        }
+
+        function exportToCSV() {
+            let db = JSON.parse(localStorage.getItem('study_db')) || []; if(db.length === 0) return alert("داده‌ای نیست.");
+            let csv = "\uFEFFتاریخ,اولین ورود,آخرین خروج,دقایق مطالعه,چک‌پوینت موفق,کل تست‌ها,جزئیات\n";
+            db.forEach(r => {
+                let detailsStr = r.breakdown.map(b => `${b.name}(${b.desc}):${b.completed}/${b.total}[تست:${b.tests||0}]`).join(" | ");
+                csv += `${escapeCSV(r.date)},${escapeCSV(r.loginTime)},${escapeCSV(r.endTime || '-')},"${r.minutes}","${r.cpsFinished} از ${r.cpsPlanned}","${r.totalTests || 0}",${escapeCSV(detailsStr)}\n`;
+            });
+            const now = new Date(); const dateStr = now.toLocaleDateString('fa-IR').replace(/\//g, '-'); const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }).replace(/:/g, '-');
+            const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `گزارش_${dateStr}_${timeStr}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function backToSetup() { pageHistory = ['login']; document.getElementById('rows-container').innerHTML = ''; rowCount = 0; navigate('setup'); }
+
+        // --- کد جدید PWA برای ثبت سرویس‌ورکر (قدم چهارم) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful:', registration.scope);
+                }).catch(function(err) {
+                    console.log('ServiceWorker registration failed:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
